@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2025 GIS 籃球社歲末年終抽獎</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body { 
+            font-family: 'Microsoft JhengHei', sans-serif; 
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-container {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        .left-panel {
+            flex: 1;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .right-panel {
+            flex: 1;
+            max-width: 600px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* ✅ 音效控制按鈕 & 設定按鈕 */
+        .top-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+        #soundToggle, #settingsBtn {
+            background: rgba(255,193,7,0.9);
+            color: #333;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        #soundToggle:hover, #settingsBtn:hover {
+            background: rgba(255,193,7,1);
+            transform: scale(1.05);
+        }
+        #soundToggle.muted {
+            background: rgba(149,165,166,0.9);
+            color: white;
+        }
+        #settingsBtn {
+            background: rgba(52,152,219,0.9);
+            color: white;
+        }
+        #settingsBtn:hover {
+            background: rgba(52,152,219,1);
+        }
+        
+        #topWinner { 
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            font-size: 32px; 
+            padding: 20px 40px; 
+            background: linear-gradient(45deg, rgba(255,215,0,0.9), rgba(255,140,0,0.9)); 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            min-width: 350px;
+            font-weight: bold;
+            display: none;
+            animation: bounce 0.6s ease-in-out;
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-20px); }
+            60% { transform: translateX(-50%) translateY(-10px); }
+        }
+        
+        #lotteryBox {
+            width: 350px !important;
+            height: 350px !important;
+            margin: 100px auto !important;
+            position: relative;
+            perspective: 800px;
+        }
+        .box-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.6s;
+        }
+        .box {
+            width: 220px;
+            height: 220px;
+            position: absolute;
+            left: 65px;
+            top: 65px;
+            background: linear-gradient(145deg, #d4a574, #b8860b);
+            border: 8px solid #8B4513;
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 40px rgba(0,0,0,0.5),
+                inset 0 10px 20px rgba(255,255,255,0.2);
+        }
+        .box-lid {
+            width: 236px;
+            height: 130px;
+            position: absolute;
+            left: 57px;
+            top: -65px;
+            background: linear-gradient(145deg, #e6b885, #cd853f);
+            border: 8px solid #A0522D;
+            border-radius: 20px 20px 12px 12px;
+            transform-origin: bottom;
+            box-shadow: 
+                0 12px 25px rgba(0,0,0,0.4),
+                inset 0 6px 12px rgba(255,255,255,0.3);
+            transition: all 1s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        .nameCard {
+            position: absolute;
+            width: 100px;
+            height: 50px;
+            background: linear-gradient(45deg, #fff, #f8f8f8);
+            border: 2px solid #ffd700;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #d32f2f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.4);
+            opacity: 0;
+            z-index: 100;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            transform: translate(-50%, -50%);
+        }
+        
+        @keyframes shakeIntense {
+            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            10% { transform: translate(-8px, -8px) rotate(-4deg) scale(1.02); }
+            20% { transform: translate(10px, 6px) rotate(3deg) scale(0.98); }
+            30% { transform: translate(-6px, 10px) rotate(-2deg) scale(1.01); }
+            40% { transform: translate(12px, -5px) rotate(4deg) scale(0.99); }
+            50% { transform: translate(-10px, 8px) rotate(-3deg) scale(1.03); }
+            60% { transform: translate(8px, -6px) rotate(2deg) scale(0.97); }
+            70% { transform: translate(-5px, 12px) rotate(-5deg) scale(1.02); }
+            80% { transform: translate(15px, -3px) rotate(3deg) scale(0.98); }
+            90% { transform: translate(-12px, 5px) rotate(-4deg) scale(1.01); }
+        }
+        @keyframes shakeLid {
+            0%, 100% { transform: rotateX(0deg); }
+            25% { transform: rotateX(6deg); }
+            50% { transform: rotateX(-4deg); }
+            75% { transform: rotateX(5deg); }
+        }
+        @keyframes openLid {
+            0% { transform: rotateX(0deg); }
+            100% { transform: rotateX(-135deg); }
+        }
+        @keyframes flyOutBatch {
+            0% { 
+                transform: translate(-50%, -50%) rotate(0deg) scale(0.3); 
+                opacity: 0; 
+            }
+            15% { 
+                transform: translate(-50%, -50%) rotate(180deg) scale(1.1); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: translate(var(--x-offset), var(--y-offset)) rotate(720deg) scale(1); 
+                opacity: 0; 
+            }
+        }
+        
+        .shaking { animation: shakeIntense 0.08s ease-in-out infinite !important; }
+        .shaking-lid { animation: shakeLid 0.12s ease-in-out infinite !important; }
+        .opening { animation: openLid 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards !important; }
+        .fly-out-batch { 
+            animation: flyOutBatch 2s ease-out forwards !important; 
+        }
+
+        #currentWinner { 
+            font-size: 20px; margin: 15px; padding: 15px; 
+            background: rgba(255,255,255,0.2); border-radius: 10px; 
+            min-height: 50px;
+            text-align: center;
+        }
+        #batchWinners { 
+            font-size: 18px; margin: 15px; padding: 15px; 
+            background: rgba(0,255,0,0.4); border-radius: 10px; 
+            text-align: left; max-height: 300px; overflow-y: auto;
+            display: none;
+        }
+        .control-panel { 
+            margin: 20px 0; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .button-group { 
+            display: flex; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            gap: 10px; 
+        }
+        .end-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        #winnersList { 
+            background: rgba(0,255,0,0.3); 
+            padding: 20px; 
+            border-radius: 15px;
+            text-align: left;
+            max-height: 600px; 
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        #exportBtn {
+            background: #e74c3c !important;
+            margin: 5px;
+            padding: 12px 25px !important;
+            font-size: 16px !important;
+            min-width: 120px;
+        }
+        #exportBtn:hover {
+            background: #c0392b !important;
+            transform: scale(1.05);
+        }
+        button { 
+            color: white; border: none; padding: 12px 25px; 
+            font-size: 16px; border-radius: 30px; cursor: pointer; 
+            transition: all 0.3s; font-weight: bold;
+        }
+        button:hover:not(:disabled) { transform: scale(1.05); }
+        button:disabled { cursor: not-allowed; transform: none; opacity: 0.6; }
+        .draw1 { background: #ff6b6b; }
+        .draw1:hover:not(:disabled) { background: #ff5252; }
+        .draw5 { background: #4ecdc4; }
+        .draw5:hover:not(:disabled) { background: #45b7aa; }
+        .draw30 { background: #9b59b6; }
+        .draw30:hover:not(:disabled) { background: #8e44ad; }
+        .end { background: #f39c12; }
+        .end:hover:not(:disabled) { background: #e67e22; }
+        .reset { background: #95a5a6; }
+        .reset:hover:not(:disabled) { background: #7f8c8d; }
+        .confirm-btn { background: #17a2b8; }
+        .confirm-btn:hover:not(:disabled) { background: #138496; }
+        input[type=file], input[type="number"], input[type="text"] { 
+            margin: 10px; padding: 10px; border-radius: 10px; border: none;
+            background: rgba(255,255,255,0.9); color: #333; font-size: 16px;
+        }
+        input:focus { outline: none; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        
+        .batch-winner, .winner-item {
+            margin: 8px 0; padding: 12px; background: rgba(255,255,255,0.9); 
+            border-radius: 8px; font-size: 16px; color: #333;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            animation: slideIn 0.5s ease-out;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .winner-item.removeable {
+            background: rgba(255, 165, 0, 0.6) !important;    
+            border: 2px solid #ff8c00 !important;             
+            color: #ffffff !important;                       
+            font-size: 22px !important;                     
+        }
+        .winner-item.removeable span {
+            color: #ffffff !important;
+            font-size: 22px !important;
+        }
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .remove-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h1 {
+            margin: 20px 0;
+            font-size: 28px;
+            text-align: center;
+        }
+        h3 {
+            margin: 0 0 15px 0;
+            color: #fff;
+        }
+
+        /* ✅ 設定面板 - 彈出視窗 */
+        #settingsDialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        .settings-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .settings-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+        .settings-title {
+            text-align: center;
+            margin: 0 0 20px 0;
+            color: #ffd700;
+        }
+        .settings-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .settings-yes { background: #28a745; }
+        .settings-no { background: #dc3545; }
+        .settings-yes:hover { background: #218838; }
+        .settings-no:hover { background: #c82333; }
+
+        /* ✅ 確認視窗樣式 */
+        #confirmDialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+        }
+        .confirm-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+        .manual-input-area {
+            margin-bottom: 20px; 
+            padding: 15px; 
+            background: rgba(255,255,255,0.1); 
+            border-radius: 10px;
+            display: flex;
+            gap: 10px;
+        }
+        .confirm-list {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .confirm-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: rgba(255,255,255,0.9);
+            border-radius: 10px;
+            font-size: 16px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .confirm-delete-btn {
+            background: #dc3545 !important;
+            color: white !important;
+            border: none !important;
+            padding: 6px 10px !important;
+            border-radius: 50% !important;
+            font-size: 14px !important;
+            cursor: pointer !important;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+        }
+        .confirm-delete-btn:hover {
+            background: #c82333 !important;
+            transform: scale(1.1);
+        }
+        .confirm-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        .confirm-yes { background: #28a745; }
+        .confirm-no { background: #dc3545; }
+        .confirm-yes:hover { background: #218838; }
+        .confirm-no:hover { background: #c82333; }
+
+        @media (max-width: 768px) {
+            .main-container { flex-direction: column; }
+            #lotteryBox { width: 300px !important; height: 300px !important; margin: 30px auto !important; }
+            .settings-row, .manual-input-area { flex-direction: column; }
+            .button-group { flex-direction: column; }
+            .top-controls { right: 10px; top: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ✅ 音效控制按鈕 & 設定按鈕 -->
+    <div class="top-controls">
+        <button id="authorBtn" onclick="showAuthor()">👨‍💻 免責聲明</button>
+        <button id="soundToggle" onclick="toggleSound()">🔊 音效開啟</button>
+        <button id="settingsBtn" onclick="showSettingsDialog()">⚙️ 抽獎設定</button>
+    </div>
+    
+    <div id="topWinner">🎉 恭喜 <span id="winnerName"></span> 等 <span id="winnerCount"></span> 人中獎！</div>
+    
+    <h1 id="mainTitle">🎁 2025 GIS 籃球社歲末年終抽獎 🎁</h1>
+    
+    <div class="main-container">
+        <div class="left-panel">
+            <input type="file" id="fileInput" accept=".xls,.xlsx" />
+            
+            <div class="control-panel">
+                <div class="button-group">
+                    <button id="manualListBtn" class="confirm-btn" onclick="openManualList()">
+                        ✍️ 手動輸入名單
+                    </button>
+
+                    <button id="confirmListBtn" class="confirm-btn" onclick="showConfirmDialog()" disabled>
+                        📋 檢視 / 確認名單
+                    </button>
+
+                    <button id="draw1Btn" class="draw1" onclick="drawMultiple(1)" disabled>🎲 抽 1 個</button>
+                    <button id="draw5Btn" class="draw5" onclick="drawMultiple(5)" disabled>⚡ 抽 5 個</button>
+                    <button id="draw30Btn" class="draw30" onclick="drawMultiple(30)" disabled>🎯 抽 30 個</button>
+                </div>
+                <div class="end-group">
+                    <button id="finishBtn" onclick="finishDraw()" disabled class="end">🏁 抽獎結束</button>
+                    <button id="resetBtn" onclick="resetDraw()" style="display:none;" class="reset">🔄 重置</button>
+                </div>
+            </div>
+            
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px;">
+                <div id="lotteryBox">
+                    <div class="box-container" id="boxContainer">
+                        <div class="box"></div>
+                        <div class="box-lid" id="boxLid"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="currentWinner">請先上傳檔案</div>
+            
+            <div id="batchWinners">
+                <h3>🎊 本輪中獎名單（<span id="batchCount">0</span> 人）</h3>
+                <div id="batchWinnersContent"></div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <h3>📋 完整中獎名單（<span id="totalWinners">0</span> / <span id="maxWinnersDisplay">30</span> 人）</h3>
+            <div id="winnersList">
+                <div id="winnersContent"></div>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button id="exportBtn" onclick="exportWinners()" style="display:none;">💾 匯出TXT</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ 抽獎設定視窗 -->
+    <div id="settingsDialog">
+        <div class="settings-content">
+            <h3 class="settings-title">⚙️ 抽獎設定</h3>
+            
+            <div class="settings-row">
+                <label style="min-width: 100px;">🎯 抽獎上限：</label>
+                <input type="number" id="maxWinnersInput" value="30" min="1" max="500" style="flex: 1; max-width: 150px;">
+            </div>
+            
+            <div class="settings-row">
+                <label style="min-width: 100px;">📝 自訂標題：</label>
+                <input type="text" id="titleInput" value="2025 GIS 籃球社歲末年終抽獎" maxlength="50" style="flex: 1;">
+            </div>
+            
+            <div class="settings-buttons">
+                <button class="settings-yes" onclick="applySettings()" style="padding: 12px 30px; font-size: 16px;">✅ 套用設定</button>
+                <button class="settings-no" onclick="closeSettingsDialog()" style="padding: 12px 30px; font-size: 16px;">❌ 取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ 確認名單視窗 -->
+    <div id="confirmDialog">
+        <div class="confirm-content">
+            <h3 style="text-align: center; margin: 0 0 20px 0;">📋 確認參加名單</h3>
+            
+            <div class="manual-input-area">
+                <input type="text" id="manualInput" placeholder="輸入姓名新增..." maxlength="20">
+                <button onclick="addManualParticipant()" class="confirm-yes" style="padding: 12px 20px; font-size: 16px; min-width: 80px;">➕ 新增</button>
+            </div>
+            
+            <div class="confirm-list">
+                <div id="confirmListContent"></div>
+            </div>
+            <div style="text-align: center; font-size: 18px; color: #ffd700; margin: 15px 0;">
+                共 <span id="confirmCount">0</span> 人
+            </div>
+            <div class="confirm-buttons">
+                <button class="confirm-yes" onclick="confirmList(true)" style="padding: 12px 30px; font-size: 16px;">✅ 確認無誤</button>
+                <button class="confirm-no" onclick="confirmList(false)" style="padding: 12px 30px; font-size: 16px;">❌ 重新上傳</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let available = [];
+        let winners = [];
+        let isAnimating = false;
+        let isListConfirmed = false;
+        let paperCards = [];
+        let MAX_WINNERS = 30;  // ✅ 可動態設定
+        
+        // ✅ 音效系統
+        let isSoundEnabled = true;
+        let shakeAudio, openAudio, cheerAudio;
+        
+        function loadSounds() {
+            shakeAudio = new Audio('4s.mp3');
+            shakeAudio.loop = true;
+            shakeAudio.volume = 0.8;
+            openAudio = new Audio('cymble.mp3');
+            openAudio.volume = 0.8;
+            cheerAudio = new Audio('YA.mp3');
+            cheerAudio.volume = 0.8;
+        }
+        
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const btn = document.getElementById('soundToggle');
+            btn.innerHTML = isSoundEnabled ? '🔊 音效開啟' : '🔇 音效關閉';
+            btn.classList.toggle('muted');
+            if (!isSoundEnabled && shakeAudio) shakeAudio.pause();
+        }
+        
+        function playShakeSound() {
+            if (!isSoundEnabled || !shakeAudio) return;
+            shakeAudio.currentTime = 0;
+            shakeAudio.play().catch(e => {});
+        }
+        
+        function playOpenSound() {
+            if (!isSoundEnabled || !openAudio) return;
+            openAudio.currentTime = 0;
+            openAudio.play().catch(e => {});
+        }
+        
+        function playCheerSound() {
+            if (!isSoundEnabled || !cheerAudio) return;
+            cheerAudio.currentTime = 0;
+            cheerAudio.play().catch(e => {});
+        }
+
+        function showAuthor() {
+            alert(
+                '📌 抽獎系統免責聲明\n\n' +
+                '本抽獎系統為測試與示範用途，\n' +
+                '抽獎結果僅供參考，不具任何法律效力。\n\n' +
+                '開發者（Hubert.Kuan）不保證\n' +
+                '系統運作之完整性與即時性，\n' +
+                '亦不負任何爭議或損失之責任。'
+            );
+        }
+        
+        // ✅ 顯示設定對話框
+        function showSettingsDialog() {
+            document.getElementById('settingsDialog').style.display = 'block';
+            document.getElementById('maxWinnersInput').focus();
+        }
+        
+        // ✅ 關閉設定對話框
+        function closeSettingsDialog() {
+            document.getElementById('settingsDialog').style.display = 'none';
+        }
+        
+        // ✅ 套用設定
+        function applySettings() {
+            const maxInput = document.getElementById('maxWinnersInput');
+            const titleInput = document.getElementById('titleInput');
+            
+            const newMax = parseInt(maxInput.value);
+            const newTitle = titleInput.value.trim();
+            
+            if (newMax < 1 || newMax > 500) {
+                alert('請輸入 1-500 人之間的數字！');
+                return;
+            }
+            if (!newTitle) {
+                alert('請輸入標題！');
+                return;
+            }
+            
+            MAX_WINNERS = newMax;
+            document.title = newTitle;
+            document.getElementById('mainTitle').textContent = newTitle;
+            document.getElementById('maxWinnersDisplay').textContent = MAX_WINNERS;
+            
+            updateUI();
+            closeSettingsDialog();
+            alert(`✅ 設定已更新！\n抽獎上限：${MAX_WINNERS} 人\n標題：${newTitle}`);
+        }
+
+        function openManualList() {
+            // 如果已經確認名單，先提醒
+            if (isListConfirmed) {
+                if (!confirm('名單已確認，重新編輯會清空抽獎結果，確定要編輯嗎？')) {
+                    return;
+                }
+                winners = [];
+                isListConfirmed = false;
+                resetAvailable();
+                updateWinnersList();
+            }
+
+            // 清空檔案選擇（代表手動模式）
+            document.getElementById('fileInput').value = '';
+
+            showConfirmDialog();
+            updateUI();
+        }
+
+        
+        // ✅ 初始化
+        window.addEventListener('load', function() {
+            loadSounds();
+            document.getElementById('maxWinnersDisplay').textContent = MAX_WINNERS;
+        });
+
+        // ✅ 絕對不重複的 available 重建
+        function resetAvailable() {
+            available = [];
+            const winnerNames = new Set(winners);
+            
+            for (let i = 0; i < participants.length; i++) {
+                if (!winnerNames.has(participants[i].name)) {
+                    available.push(i);
+                }
+            }
+            console.log(`✅ 重建 available: ${available.length} 人可抽 (排除 ${winners.length}/${MAX_WINNERS} 中獎者)`);
+        }
+
+        // ✅ 確認名單視窗
+        function showConfirmDialog() {
+            const dialog = document.getElementById('confirmDialog');
+            const listContent = document.getElementById('confirmListContent');
+            const confirmCount = document.getElementById('confirmCount');
+
+            listContent.innerHTML = participants.length === 0
+                ? '<div style="text-align:center; color:#ffd700;">目前尚無名單，請手動新增</div>'
+                : participants.map((p, idx) => 
+                    `<div class="confirm-item">
+                        <span>${idx + 1}. ${p.name}</span>
+                        <button class="confirm-delete-btn" onclick="deleteConfirmParticipant(${idx})">❌</button>
+                    </div>`
+                ).join('');
+
+            confirmCount.textContent = participants.length;
+            dialog.style.display = 'block';
+            document.getElementById('manualInput').focus();
+        }
+
+        // ✅ 手動新增
+        function addManualParticipant() {
+            const input = document.getElementById('manualInput');
+            const name = input.value.trim();
+            
+            if (!name) {
+                alert('請輸入姓名！');
+                input.focus();
+                return;
+            }
+            
+            if (participants.find(p => p.name === name)) {
+                alert('此姓名已存在！');
+                input.value = '';
+                input.focus();
+                return;
+            }
+            
+            participants.push({name: name});
+            resetAvailable();
+            input.value = '';
+            showConfirmDialog();
+        }
+
+        // ✅ Enter鍵新增
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && document.getElementById('confirmDialog').style.display !== 'none') {
+                addManualParticipant();
+            }
+        });
+
+        // ✅ 刪除確認名單
+        function deleteConfirmParticipant(index) {
+            const name = participants[index].name;
+            if (confirm(`確定要從名單中刪除 "${name}" 嗎？`)) {
+                participants.splice(index, 1);
+                resetAvailable();
+                showConfirmDialog();
+            }
+        }
+
+        // ✅ 確認名單
+        function confirmList(isConfirmed) {
+            document.getElementById('confirmDialog').style.display = 'none';
+
+            if (isConfirmed) {
+                if (participants.length === 0) {
+                    alert('請至少新增一位抽獎人！');
+                    showConfirmDialog();
+                    return;
+                }
+
+                isListConfirmed = true;
+                resetAvailable();
+                alert(`✅ 名單確認完成！共 ${participants.length} 人\n抽獎上限：${MAX_WINNERS} 人`);
+                updateUI();
+            } else {
+                document.getElementById('fileInput').value = '';
+                participants = [];
+                available = [];
+                winners = [];
+                isListConfirmed = false;
+                updateUI();
+                alert('請重新設定名單');
+            }
+        }
+
+        document.getElementById('confirmDialog').addEventListener('click', function(e) {
+            if (e.target.id === 'confirmDialog') {
+                this.style.display = 'none';
+            }
+        });
+
+        document.getElementById('settingsDialog').addEventListener('click', function(e) {
+            if (e.target.id === 'settingsDialog') {
+                closeSettingsDialog();
+            }
+        });
+
+        // ✅ 檔案上傳
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(sheet, {header: 1});
+                
+                participants = [];
+                for (let i = 1; i < json.length; i++) {
+                    if (json[i] && json[i][0]) {
+                        const name = json[i][0].toString().trim();
+                        if (name) participants.push({name: name});
+                    }
+                }
+                
+                // 去重
+                participants = participants.filter((p, index, self) =>
+                    index === self.findIndex(t => t.name === p.name)
+                );
+                
+                console.log('讀取完成，共', participants.length, '人');
+                isListConfirmed = false;
+                resetAvailable();
+                updateUI();
+                showConfirmDialog();
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // ✅ 防重複抽獎核心
+        function drawMultiple(requestedCount) {
+            if (!isListConfirmed) {
+                alert('請先確認名單！');
+                return;
+            }
+            if (available.length === 0) {
+                alert('❌ 無人可抽！');
+                return;
+            }
+
+            const remainingSlots = MAX_WINNERS - winners.length;
+            const actualCount = Math.min(requestedCount, available.length, remainingSlots);
+            
+            if (actualCount === 0) {
+                alert(`已達上限 ${MAX_WINNERS} 人！`);
+                return;
+            }
+
+            console.log(`🎲 抽獎：請求${requestedCount}，實際${actualCount}，剩餘${available.length}`);
+            isAnimating = true;
+            disableButtons();
+            
+            let batchWinners = [];
+            const drawnNames = new Set();
+            
+            for (let i = 0; i < actualCount; i++) {
+                if (available.length === 0) break;
+                
+                const randomIdx = Math.floor(Math.random() * available.length);
+                const winnerIdx = available[randomIdx];
+                const winnerName = participants[winnerIdx].name;
+                
+                if (winnerIdx >= 0 && winnerIdx < participants.length && 
+                    !drawnNames.has(winnerName) && !winners.includes(winnerName)) {
+                    
+                    batchWinners.push(winnerName);
+                    drawnNames.add(winnerName);
+                    available.splice(randomIdx, 1);
+                }
+            }
+            
+            if (batchWinners.length > 0) {
+                shakeAndBatchFly(batchWinners, requestedCount);
+            } else {
+                alert('抽獎失敗，請重試！');
+                isAnimating = false;
+                updateUI();
+            }
+        }
+
+        function shakeAndBatchFly(batchWinners, requestedCount) {
+            const boxContainer = document.getElementById('boxContainer');
+            const boxLid = document.getElementById('boxLid');
+            
+            boxContainer.classList.add('shaking');
+            boxLid.classList.add('shaking-lid');
+            document.getElementById('currentWinner').innerHTML = '🌀 箱子攪動中...';
+            playShakeSound();
+            
+            setTimeout(() => {
+                boxContainer.classList.remove('shaking');
+                boxLid.classList.remove('shaking-lid');
+                if (shakeAudio) shakeAudio.pause();
+                
+                boxLid.classList.add('opening');
+                document.getElementById('currentWinner').innerHTML = '⬆️ 箱蓋開啟中...';
+                playOpenSound();
+                
+                setTimeout(() => {
+                    batchPaperFlyOut(batchWinners, () => {
+                        document.getElementById('currentWinner').innerHTML = `🎉 抽獎完成！共${batchWinners.length}人中獎`;
+                        
+                        setTimeout(() => {
+                            boxLid.classList.remove('opening');
+                            paperCards.forEach(card => card.remove());
+                            paperCards = [];
+                            
+                            winners.push(...batchWinners);
+                            showBatchWinners(batchWinners, batchWinners.length, requestedCount);
+                            updateWinnersList();
+                            playCheerSound();
+                            showTopWinner(batchWinners, batchWinners.length);
+                            isAnimating = false;
+                            updateUI(true);
+                            enableButtons();
+                        }, 2000);
+                    });
+                }, 1500);
+            }, 4000);
+        }
+
+        function batchPaperFlyOut(batchWinners, callback) {
+            const lotteryBox = document.getElementById('lotteryBox');
+            paperCards.forEach(card => card.remove());
+            paperCards = [];
+            
+            batchWinners.forEach((name, index) => {
+                const card = document.createElement('div');
+                card.className = 'nameCard';
+                card.textContent = name;
+                card.style.left = '50%';
+                card.style.top = '50%';
+                card.style.setProperty('--x-offset', `${(Math.random() - 0.5) * 300 + (index % 3 - 1) * 40}px`);
+                card.style.setProperty('--y-offset', `${-150 - index * 15 + (Math.random() - 0.5) * 80}px`);
+                card.style.animationDelay = `${index * 0.1}s`;
+                card.style.zIndex = 100 + index;
+                
+                lotteryBox.appendChild(card);
+                paperCards.push(card);
+                card.classList.add('fly-out-batch');
+            });
+            
+            setTimeout(callback, 2000);
+        }
+
+        function showTopWinner(winnerNames, count) {
+            document.getElementById('winnerName').textContent = winnerNames[0];
+            document.getElementById('winnerCount').textContent = count;
+            document.getElementById('topWinner').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('topWinner').style.display = 'none';
+            }, 4000);
+        }
+
+        function showBatchWinners(batchWinners, actualCount, requestedCount) {
+            document.getElementById('batchCount').textContent = `${actualCount} 人`;
+            document.getElementById('batchWinnersContent').innerHTML = 
+                batchWinners.map((name, idx) => 
+                    `<div class="batch-winner">🎉 ${winners.length - batchWinners.length + idx + 1}. ${name}</div>`
+                ).join('');
+            document.getElementById('batchWinners').style.display = 'block';
+            document.getElementById('batchWinners').scrollTop = 0;
+        }
+
+        function updateWinnersList() {
+            document.getElementById('totalWinners').textContent = winners.length;
+            document.getElementById('winnersContent').innerHTML = 
+                winners.map((name, idx) => 
+                    `<div class="winner-item removeable" data-index="${idx}">
+                        <span>${idx+1}. ${name}</span>
+                        <button class="remove-btn" onclick="removeWinner(${idx})">移除</button>
+                    </div>`
+                ).join('');
+        }
+
+        // ✅ 移除中獎者 - 完全重建
+        function removeWinner(index) {
+            if (index < 0 || index >= winners.length) return;
+            winners.splice(index, 1);
+            resetAvailable();
+            updateWinnersList();
+            updateUI();
+            document.getElementById('batchWinners').style.display = 'none';
+        }
+
+        function exportWinners() {
+            if (winners.length === 0) {
+                alert('沒有中獎名單可匯出！');
+                return;
+            }
+            
+            let txtContent = `${document.getElementById('mainTitle').textContent}\n`;
+            txtContent += `抽獎結果 - 共 ${winners.length}/${MAX_WINNERS} 人中獎\n`;
+            txtContent += `========================\n\n`;
+            
+            winners.forEach((name, idx) => {
+                txtContent += `${String(idx + 1).padStart(2, ' ')}. ${name}\n`;
+            });
+            
+            txtContent += `\n========================\n`;
+            txtContent += `產生時間：${new Date().toLocaleString('zh-TW')}\n`;
+            
+            const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `抽獎結果_${new Date().toISOString().slice(0,10)}.txt`;
+            link.click();
+        }
+
+        function updateUI() {
+            const draw1Btn = document.getElementById('draw1Btn');
+            const draw5Btn = document.getElementById('draw5Btn');
+            const draw30Btn = document.getElementById('draw30Btn');
+            const confirmListBtn = document.getElementById('confirmListBtn');
+            const finishBtn = document.getElementById('finishBtn');
+            const exportBtn = document.getElementById('exportBtn');
+            
+            const isFinished = winners.length >= MAX_WINNERS;
+            const canDraw = participants.length > 0 && available.length > 0 && !isAnimating && !isFinished && isListConfirmed;
+            const hasParticipants = participants.length > 0;
+            
+            draw1Btn.disabled = !canDraw;
+            draw5Btn.disabled = !canDraw;
+            draw30Btn.disabled = !canDraw;
+            confirmListBtn.disabled = isListConfirmed;
+            document.getElementById('manualListBtn').disabled = isAnimating;
+            finishBtn.disabled = winners.length === 0 || isFinished;
+            exportBtn.style.display = winners.length > 0 ? 'inline-block' : 'none';
+            
+            document.getElementById('resetBtn').style.display = isFinished ? 'inline-block' : 'none';
+            
+            document.getElementById('currentWinner').innerHTML = 
+                isFinished ? `🎉 已抽滿 ${MAX_WINNERS} 人，抽獎完成！` :
+                !hasParticipants ? '請先上傳檔案' :
+                !isListConfirmed ? `📋 已讀取 ${participants.length} 人，請確認名單` :
+                `✅ 已確認 ${participants.length} 人，剩餘 ${available.length} 人（已抽 ${winners.length}/${MAX_WINNERS} 人）`;
+        }
+
+        function finishDraw() {
+            document.getElementById('batchWinners').style.display = 'none';
+            updateWinnersList();
+        }
+
+        function disableButtons() {
+            document.getElementById('draw1Btn').disabled = true;
+            document.getElementById('draw5Btn').disabled = true;
+            document.getElementById('draw30Btn').disabled = true;
+        }
+
+        function enableButtons() {
+            updateUI();
+        }
+
+        function resetDraw() {
+            isAnimating = false;
+            isListConfirmed = false;
+            if (shakeAudio) shakeAudio.pause();
+            resetAvailable();
+            document.getElementById('resetBtn').style.display = 'none';
+            document.getElementById('batchWinners').style.display = 'none';
+            document.getElementById('topWinner').style.display = 'none';
+            document.getElementById('exportBtn').style.display = 'none';
+            document.getElementById('boxContainer').classList.remove('shaking');
+            document.getElementById('boxLid').classList.remove('shaking-lid', 'opening');
+            paperCards.forEach(card => card.remove());
+            paperCards = [];
+            updateUI();
+        }
+    </script>
+</body>
+</html>
